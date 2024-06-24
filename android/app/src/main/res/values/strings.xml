@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Reelzzz</string>
+     <!-- Facebook Config Here -->
+    <string name="facebook_app_id">YOUR_FB_APP_ID</string>
+    <string name="fb_login_protocol_scheme">fbYOUR_FB_APP_ID</string>
+    <string name="facebook_client_token">YOUR_FB_CLIENT_TOKEN</string>
+      <!-- Facebook Config Here -->
+</resources>
