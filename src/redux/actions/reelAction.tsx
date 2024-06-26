@@ -22,3 +22,21 @@ export const fetchFeedReel =
       return [];
     }
   };
+
+interface fetchUserReel {
+  userId?: string;
+  offset: number;
+}
+
+export const fetchReel =
+  (data: fetchUserReel, type: string) => async (dispatch: any) => {
+    try {
+      const res = await appAxios.get(
+        `/feed/${type}/${data?.userId}?limit=5&offset=${data?.offset}`,
+      );
+      return res.data.reelData || [];
+    } catch (error) {
+      console.log('FETCH REEL ERROR', error);
+      return [];
+    }
+  };

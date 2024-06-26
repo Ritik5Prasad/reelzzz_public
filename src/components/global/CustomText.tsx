@@ -9,6 +9,8 @@ import React, {FC} from 'react';
 import {FONTS} from '../../constants/Fonts';
 import {RFValue} from 'react-native-responsive-fontsize';
 import {Colors} from '../../constants/Colors';
+import {SheetManager} from 'react-native-actions-sheet';
+import {navigate} from '../../utils/NavigationUtil';
 
 interface Props {
   variant?:
@@ -74,7 +76,14 @@ const CustomText: FC<Props> = ({
       computedFontSize = RFValue(fontSize || 12);
   }
 
-  const handleUserPress = async (mention: string) => {};
+  const handleUserPress = async (mention: string) => {
+    if (SheetManager.get('comment-sheet')?.current?.isOpen()) {
+      await SheetManager.hide('comment-sheet');
+    }
+    navigate('UserProfileScreen', {
+      username: mention,
+    });
+  };
 
   const renderTextWithMentions = (text: string): JSX.Element[] => {
     const mentionRegex = /@(\w+)/g;

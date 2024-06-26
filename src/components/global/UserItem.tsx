@@ -9,6 +9,8 @@ import FastImage from 'react-native-fast-image';
 import {RFValue} from 'react-native-responsive-fontsize';
 import {Colors} from '../../constants/Colors';
 import {FONTS} from '../../constants/Fonts';
+import { SheetManager } from 'react-native-actions-sheet';
+import { push } from '../../utils/NavigationUtil';
 
 const UserItem: FC<{
   user: User;
@@ -36,6 +38,10 @@ const UserItem: FC<{
           onPress();
           return;
         }
+        push('UserProfileScreen', {
+          username: user.username,
+        });
+        SheetManager.hide('like-sheet');
       }}>
       <FastImage
         source={{uri: user.userImage, priority: FastImage.priority.high}}
