@@ -1,29 +1,28 @@
-import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  Alert,
-  PermissionsAndroid,
-  TouchableOpacity,
-  Linking,
-  ActivityIndicator,
-  FlatList,
-} from 'react-native';
 import React, {FC, useEffect, useState} from 'react';
-import CustomView from '../../components/global/CustomView';
+import {
+  StyleSheet,
+  View,
+  FlatList,
+  Image,
+  PermissionsAndroid,
+  Platform,
+  Alert,
+  TouchableOpacity,
+  SafeAreaView,
+  ActivityIndicator,
+  Linking,
+} from 'react-native';
 import CustomHeader from '../../components/global/CustomHeader';
-import PickerReelButton from '../../components/reel/PickerReelButton';
-import CustomText from '../../components/global/CustomText';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import {RFValue} from 'react-native-responsive-fontsize';
 import {Colors} from '../../constants/Colors';
-import {CameraRoll} from '@react-native-camera-roll/camera-roll';
-import {Platform} from 'react-native';
+import {RFValue} from 'react-native-responsive-fontsize';
+import CustomText from '../../components/global/CustomText';
 import {FONTS} from '../../constants/Fonts';
-import {Image} from 'react-native';
+import PickerReelButton from '../../components/reel/PickerReelButton';
+import {CameraRoll} from '@react-native-camera-roll/camera-roll';
 import {screenHeight} from '../../utils/Scaling';
 import {convertDurationToMMSS} from '../../utils/dateUtils';
+import CustomView from '../../components/global/CustomView';
 import {createThumbnail} from 'react-native-create-thumbnail';
 import {navigate} from '../../utils/NavigationUtil';
 
@@ -32,17 +31,17 @@ interface VideoProp {
   playableDuration: number;
 }
 
-const useGallery = ({pageSize = 10}) => {
+const useGallery = ({pageSize = 30}) => {
   const [videos, setVideos] = useState<VideoProp[]>([]);
   const [nextCursor, setNextCursor] = useState<string | undefined>(undefined);
-  const [permissionNotGranted, setPermissionGranted] = useState<boolean>(false);
+  const [permissionNotGranted, setPermissionNotGranted] =
+    useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingNextPage, setIsLoadingNextPage] = useState(false);
   const [hasNextPage, setHasNextPage] = useState(true);
 
   const loadNextPagePictures = async () => {
     if (!hasNextPage) return;
-
     try {
       setIsLoadingNextPage(true);
       const videoData = await CameraRoll.getPhotos({
@@ -58,11 +57,11 @@ const useGallery = ({pageSize = 10}) => {
         ],
       });
 
-      const videoExtracted = videoData?.edges?.map(edge => ({
+      const videoExtracted = videoData.edges.map(edge => ({
         uri: edge.node.image.uri,
         playableDuration: edge.node.image.playableDuration,
         filePath: edge.node.image.filepath,
-        filename: edge.node.image.filename,
+        fileName: edge.node.image.filename,
         extension: edge.node.image.extension,
       }));
 
@@ -70,52 +69,56 @@ const useGallery = ({pageSize = 10}) => {
       setNextCursor(videoData.page_info.end_cursor);
       setHasNextPage(videoData.page_info.has_next_page);
     } catch (error) {
-      console.log(error);
-      Alert.alert('Error', 'An error occured while fetching videos');
+      console.error(error);
+      Alert.alert('Error', 'An error occurred while fetching videos.');
     } finally {
       setIsLoadingNextPage(false);
     }
   };
 
-  const hasAndroidPermission = async () => {
-    if ((Platform.Version as number) >= 33) {
-      const statuses = await PermissionsAndroid.requestMultiple([
-        PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES,
-        PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO,
-      ]);
-      return (
-        statuses[PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES] ===
-          PermissionsAndroid.RESULTS.GRANTED &&
-        statuses[PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO] ===
-          PermissionsAndroid.RESULTS.GRANTED
-      );
-    } else {
-      const status = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-      );
-      return status === PermissionsAndroid.RESULTS.GRANTED;
-    }
-  };
-
-  const fetchInitial = async () => {
-    const hasPermission = await hasAndroidPermission();
-    if (!hasPermission) {
-      setPermissionGranted(true);
-    } else {
+  useEffect(() => {
+    async function fetchVideos() {
       setIsLoading(true);
       await loadNextPagePictures();
       setIsLoading(false);
     }
-  };
 
-  const fetchVideos = async () => {
-    setIsLoading(true);
-    await loadNextPagePictures();
-    setIsLoading(false);
-  };
-
-  useEffect(() => {
-    if (Platform.OS == 'ios') {
+    const hasAndroidPermission = async () => {
+      // Perform your Android permission checks here
+      // Example:
+      if ((Platform.Version as number) >= 33) {
+        const statuses = await PermissionsAndroid.requestMultiple([
+          PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES,
+          PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO,
+          PermissionsAndroid.PERMISSIONS.CAMERA,
+        ]);
+        return (
+          statuses[PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES] ===
+            PermissionsAndroid.RESULTS.GRANTED &&
+          statuses[PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO] ===
+            PermissionsAndroid.RESULTS.GRANTED &&
+          statuses[PermissionsAndroid.PERMISSIONS.CAMERA] ===
+            PermissionsAndroid.RESULTS.GRANTED
+        );
+      } else {
+        const status = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+        );
+        return status === PermissionsAndroid.RESULTS.GRANTED;
+      }
+    };
+    const fetchInitial = async () => {
+      const hasPermission = await hasAndroidPermission();
+      if (!hasPermission) {
+        setPermissionNotGranted(true);
+      } else {
+        setIsLoading(true);
+        await loadNextPagePictures();
+        setIsLoading(false);
+      }
+    };
+    // Skip permission check for iOS
+    if (Platform.OS === 'ios') {
       fetchVideos();
     } else {
       fetchInitial();
@@ -137,10 +140,10 @@ const PickReelScreen: FC = () => {
     videos,
     loadNextPagePictures,
     isLoading,
-    hasNextPage,
     isLoadingNextPage,
+    hasNextPage,
     permissionNotGranted,
-  } = useGallery({pageSize: 10});
+  } = useGallery({pageSize: 30});
 
   const handleOpenSettings = () => {
     Linking.openSettings();
@@ -148,23 +151,24 @@ const PickReelScreen: FC = () => {
 
   const handleVideoSelect = async (data: any) => {
     const {uri} = data;
+
     if (Platform.OS === 'android') {
       createThumbnail({
         url: uri || '',
         timeStamp: 100,
-      }).then(response => {
-        console.log(response);
-        navigate('UploadReelScreen', {
-          thumb_uri: response.path,
-          file_uri: uri,
-        }).catch(err => {
-          console.log('Thumbnail Generation error', err);
+      })
+        .then(response => {
+          console.log(response);
+          navigate('UploadReelScreen', {
+            thumb_uri: response.path,
+            file_uri: uri,
+          });
+        })
+        .catch(err => {
+          console.error('Thumbnail generation error', err);
         });
-      });
-
       return;
     }
-
     const fileData = await CameraRoll.iosGetImageDataById(uri);
     createThumbnail({
       url: fileData?.node?.image?.filepath || '',
@@ -174,11 +178,11 @@ const PickReelScreen: FC = () => {
         console.log(response);
         navigate('UploadReelScreen', {
           thumb_uri: response.path,
-          file_uri: uri,
+          file_uri: fileData?.node?.image?.filepath,
         });
       })
       .catch(err => {
-        console.log('Thumbnail Generation error', err);
+        console.error('Thumbnail generation error', err);
       });
   };
 
@@ -202,27 +206,26 @@ const PickReelScreen: FC = () => {
     if (!isLoadingNextPage) return null;
     return <ActivityIndicator size="small" color={Colors.theme} />;
   };
+
   return (
     <CustomView>
       <SafeAreaView style={styles.margin}>
         <CustomHeader title="New Reel" />
       </SafeAreaView>
-
-      <View>
+      <View style={styles.pad}>
         <PickerReelButton />
         <View style={styles.flexRow}>
-          <CustomText>Recent</CustomText>
+          <CustomText variant="h6" fontFamily={FONTS.Medium}>
+            Recent
+          </CustomText>
           <Icon name="chevron-down" size={RFValue(20)} color={Colors.white} />
         </View>
       </View>
 
       {permissionNotGranted ? (
         <View style={styles.permissionDeniedContainer}>
-          <CustomText
-            variant="h6"
-            fontFamily={FONTS.Medium}
-            style={{textAlign: 'center'}}>
-            We need permission to access your gallery. Grant and reopen app
+          <CustomText variant="h6" fontFamily={FONTS.Medium}>
+            We need permission to access your gallery.
           </CustomText>
           <TouchableOpacity onPress={handleOpenSettings}>
             <CustomText
@@ -255,19 +258,18 @@ const PickReelScreen: FC = () => {
 };
 
 const styles = StyleSheet.create({
-  time: {
-    position: 'absolute',
-    backgroundColor: 'rgba(0,0,0,0.02)',
-    bottom: 3,
-    right: 3,
+  pad: {
+    padding: 8,
   },
   margin: {
     margin: 10,
   },
-  thumbnail: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
+  flexRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 6,
+    margin: 8,
+    marginTop: 20,
   },
   videoItem: {
     width: '33%',
@@ -275,23 +277,33 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     margin: 2,
   },
-  flexRow: {
-    gap: 6,
-    margin: 8,
-    marginTop: 20,
-    alignItems: 'center',
-    flexDirection: 'row',
-  },
-  permissionButton: {
-    marginTop: 16,
-    color: Colors.theme,
+  thumbnail: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
   permissionDeniedContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    alignContent: 'center',
     padding: 16,
+  },
+  permissionButton: {
+    marginTop: 16,
+    color: Colors.theme,
+  },
+  time: {
+    position: 'absolute',
+    backgroundColor: 'rgba(0,0,0,0.02)',
+    bottom: 3,
+    right: 3,
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
   },
 });
 

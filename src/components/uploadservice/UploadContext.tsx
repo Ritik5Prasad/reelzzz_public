@@ -1,25 +1,26 @@
 import React, {
-  ReactNode,
   createContext,
+  useState,
   useContext,
   useEffect,
-  useState,
+  ReactNode,
 } from 'react';
 import {
-  Alert,
+  View,
+  Text,
+  StyleSheet,
   Animated,
   Easing,
-  Platform,
-  StyleSheet,
+  Image,
   TouchableOpacity,
-  View,
+  Platform,
+  Alert,
 } from 'react-native';
-import {useAppDispatch} from '../../redux/reduxHook';
-import {uploadFile} from '../../redux/actions/fileAction';
-import {createReel} from '../../redux/actions/reelAction';
 import {Colors} from '../../constants/Colors';
-import {Image} from 'react-native';
-import {Text} from 'react-native';
+import {navigate} from '../../utils/NavigationUtil';
+import {uploadFile} from '../../redux/actions/fileAction';
+import {useAppDispatch} from '../../redux/reduxHook';
+import {createReel} from '../../redux/actions/reelAction';
 
 interface UploadContextType {
   isUpload: boolean;
@@ -31,6 +32,7 @@ interface UploadContextType {
   showUpload: (value: boolean) => void;
   thumbnailUri: string;
 }
+
 const defaultContext: UploadContextType = {
   isUpload: false,
   loadingMessage: null,
@@ -52,50 +54,58 @@ export const UploadProvider: React.FC<{children: ReactNode}> = ({children}) => {
   const [thumbnailUri, setThumbnailUri] = useState<string>('');
   const [uploading, setUploading] = useState<boolean>(false);
   const dispatch = useAppDispatch();
-
   const startUpload = async (
     thumb_uri: string,
     file_uri: string,
     caption: string,
   ) => {
-    Animated.timing(uploadAnimation, {
-      toValue: 1,
-      duration: 500,
-      easing: Easing.inOut(Easing.ease),
-      useNativeDriver: true,
-    }).start();
-    setUploadProgress(0);
-    setThumbnailUri(thumb_uri);
-    setUploading(true);
-    setLoadingMessage('Uploading Thumbnail...🚀');
-    showUpload(true);
-
-    const thumbnailResponse = await dispatch(
-      uploadFile(thumb_uri, 'reel_thumbnail'),
-    );
-    setUploadProgress(30);
-    setLoadingMessage('Uploading Video...🎞️');
-    const videoResponse = await dispatch(uploadFile(file_uri, 'reel_video'));
-    setUploadProgress(70);
-    setLoadingMessage('Finishing Upload...✨');
-    const data = {
-      videoUri: videoResponse,
-      thumbUri: thumbnailResponse,
-      caption: caption,
-    };
-
-    await dispatch(createReel(data));
-
-    setUploading(false);
-    setUploadProgress(100);
-    await setTimeout(() => {
+    try {
       Animated.timing(uploadAnimation, {
-        toValue: 0,
+        toValue: 1,
         duration: 500,
         easing: Easing.inOut(Easing.ease),
         useNativeDriver: true,
-      }).start(() => showUpload(false));
-    }, 5000);
+      }).start();
+      setUploadProgress(0);
+      setThumbnailUri(thumb_uri);
+      setUploading(true);
+      setLoadingMessage('Uploading Thumbnail...🚀');
+      showUpload(true);
+
+      const thumbnailResponse = await dispatch(
+        uploadFile(thumb_uri, 'reel_thumbnail'),
+      );
+      if (!thumbnailResponse) {
+        throw new Error('There was an upload error');
+      }
+      setUploadProgress(30);
+      setLoadingMessage('Uploading Video...🎞️');
+      const videoResponse = await dispatch(uploadFile(file_uri, 'reel_video'));
+      if (!videoResponse) {
+        throw new Error('There was an upload error');
+      }
+      setUploadProgress(70);
+      setLoadingMessage('Finishing Upload...✨');
+      const data = {
+        videoUri: videoResponse,
+        thumbUri: thumbnailResponse,
+        caption: caption,
+      };
+      await dispatch(createReel(data));
+      setUploading(false);
+      setUploadProgress(100);
+      await setTimeout(() => {
+        Animated.timing(uploadAnimation, {
+          toValue: 0,
+          duration: 500,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }).start(() => showUpload(false));
+      }, 5000);
+    } catch (error) {
+      console.log(error)
+      showUpload(false);
+    }
   };
 
   return (
@@ -126,10 +136,9 @@ const UploadProgress: React.FC = () => {
     uploading,
     loadingMessage,
     uploadAnimation,
-    thumbnailUri,
     uploadProgress,
     showUpload,
-    startUpload,
+    thumbnailUri,
   } = useUpload();
 
   useEffect(() => {
@@ -168,6 +177,7 @@ const UploadProgress: React.FC = () => {
           {!uploading && (
             <TouchableOpacity
               onPress={() => {
+                navigate('Profile');
                 showUpload(false);
               }}>
               <Text style={styles.viewText}>View</Text>
@@ -175,7 +185,6 @@ const UploadProgress: React.FC = () => {
           )}
         </View>
       </TouchableOpacity>
-
       {uploading && (
         <View style={styles.progressBarContainer}>
           <View style={[styles.progressBar, {width: `${uploadProgress}%`}]} />
@@ -186,21 +195,9 @@ const UploadProgress: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  textContainer: {
-    flex: 1,
-  },
-  viewText: {
-    color: 'white',
-    fontSize: 14,
-    textDecorationLine: 'underline',
-  },
-  toastText: {
-    color: 'white',
-    fontSize: 16,
-  },
   toast: {
     position: 'absolute',
-    bottom: Platform.OS == 'ios' ? 20 : 10,
+    bottom: Platform.OS === 'ios' ? 20 : 10,
     left: 0,
     right: 0,
     marginHorizontal: 10,
@@ -215,9 +212,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  progressBar: {
-    height: '100%',
-    backgroundColor: Colors.theme,
+  thumbnail: {
+    width: 40,
+    height: 40,
+    borderRadius: 4,
+    marginRight: 10,
+  },
+  textContainer: {
+    flex: 1,
+  },
+  toastText: {
+    color: 'white',
+    fontSize: 16,
+  },
+  viewText: {
+    color: 'white',
+    fontSize: 14,
+    textDecorationLine: 'underline',
   },
   progressBarContainer: {
     height: 4,
@@ -227,10 +238,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginTop: 10,
   },
-  thumbnail: {
-    width: 40,
-    height: 40,
-    borderRadius: 4,
-    marginRight: 10,
+  progressBar: {
+    height: '100%',
+    backgroundColor: Colors.theme,
   },
 });

@@ -20,7 +20,7 @@ import {navigate} from '../../utils/NavigationUtil';
 import {useAppDispatch, useAppSelector} from '../../redux/reduxHook';
 import {
   selectLikedComment,
-  selectLikedReply, 
+  selectLikedReply,
 } from '../../redux/reducers/likeSlice';
 import {
   toggleLikeComment,
@@ -50,7 +50,7 @@ const CommentSingleItem: React.FC<CommentSingleItemProps> = ({
     return {
       isLiked:
         likedComment?.find((ritem: any) => ritem.id === comment._id)?.isLiked ??
-        comment.isLiked,
+        comment?.isLiked,
       likesCount:
         likedComment?.find((ritem: any) => ritem.id === comment._id)
           ?.likesCount ?? comment.likesCount,
@@ -97,10 +97,22 @@ const CommentSingleItem: React.FC<CommentSingleItemProps> = ({
   const likeComment = async () => {
     'worklet';
     if (!isReply) {
-      await dispatch(toggleLikeComment(comment._id, commentMeta?.likesCount));
+      await dispatch(
+        toggleLikeComment(
+          comment._id,
+          commentMeta?.likesCount,
+          commentMeta?.isLiked ?? false,
+        ),
+      );
       return;
     }
-    await dispatch(toggleLikeReply(comment._id, replyMeta?.likesCount));
+    await dispatch(
+      toggleLikeReply(
+        comment._id,
+        replyMeta?.likesCount,
+        replyMeta?.isLiked ?? false,
+      ),
+    );
   };
 
   useEffect(() => {
@@ -128,8 +140,6 @@ const CommentSingleItem: React.FC<CommentSingleItemProps> = ({
       multiAction();
     })
     .runOnJS(true);
-
-    
 
   return (
     <GestureDetector gesture={Gesture.Exclusive(doubleTap, longPress)}>

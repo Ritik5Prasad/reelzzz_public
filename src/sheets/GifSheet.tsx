@@ -99,7 +99,7 @@ const GifSheet = (props: SheetProps<'gif-sheet'>) => {
         <Icon name="magnify" size={RFValue(15)} color={Colors.border} />
         <TextInput
           style={styles.input}
-          placeholder="Search users"
+          placeholder="Search GIF"
           placeholderTextColor={Colors.border}
           value={search}
           onChangeText={setSearch}

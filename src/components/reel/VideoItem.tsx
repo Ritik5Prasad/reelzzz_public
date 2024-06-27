@@ -63,7 +63,7 @@ const VideoItem: FC<VideoItemProps> = ({item, isVisible, preload}) => {
   }, [commentsCounts, item?._id]);
 
   const handleLikeReel = async () => {
-    await dispatch(toggleLikeReel(item._id, reelMeta?.likesCount));
+    await dispatch(toggleLikeReel(item._id, reelMeta?.likesCount,reelMeta?.isLiked));
   };
 
   const handleTogglePlay = useCallback(() => {
