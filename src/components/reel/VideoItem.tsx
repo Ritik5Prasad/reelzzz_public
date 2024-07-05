@@ -1,4 +1,4 @@
-import {View, Text, StyleSheet} from 'react-native';
+import {View, Text, StyleSheet, Platform, Share} from 'react-native';
 import React, {
   FC,
   memo,
@@ -63,7 +63,25 @@ const VideoItem: FC<VideoItemProps> = ({item, isVisible, preload}) => {
   }, [commentsCounts, item?._id]);
 
   const handleLikeReel = async () => {
-    await dispatch(toggleLikeReel(item._id, reelMeta?.likesCount,reelMeta?.isLiked));
+    await dispatch(
+      toggleLikeReel(item._id, reelMeta?.likesCount, reelMeta?.isLiked),
+    );
+  };
+
+  const handleShareReel = () => {
+    const reelUrl = `${
+      Platform.OS == 'android' ? 'http://localhost:3000' : 'reelzzz:/'
+    }/share/reel/${item._id}`;
+    const message = `Hey, Checkout this reel: ${reelUrl}`;
+    Share.share({
+      message: message,
+    })
+      .then(res => {
+        console.log('Share Result', res);
+      })
+      .catch(error => {
+        console.log('Share Error', error);
+      });
   };
 
   const handleTogglePlay = useCallback(() => {
@@ -218,7 +236,7 @@ const VideoItem: FC<VideoItemProps> = ({item, isVisible, preload}) => {
             },
           });
         }}
-        onShare={() => {}}
+        onShare={handleShareReel}
         isLiked={reelMeta?.isLiked}
       />
     </View>

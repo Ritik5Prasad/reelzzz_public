@@ -1,3 +1,4 @@
+import {navigate, resetAndNavigate} from '../../utils/NavigationUtil';
 import {appAxios} from '../apiConfig';
 import {refetchUser} from './userAction';
 
@@ -35,6 +36,24 @@ export const fetchReel =
         `/feed/${type}/${data?.userId}?limit=5&offset=${data?.offset}`,
       );
       return res.data.reelData || [];
+    } catch (error) {
+      console.log('FETCH REEL ERROR', error);
+      return [];
+    }
+  };
+
+export const getReelById =
+  (id: string, deepLinkType: string) => async (dispatch: any) => {
+    try {
+      const res = await appAxios.get(`/reel/${id}`);
+      console.log(deepLinkType, id);
+      if (deepLinkType !== 'RESUME') {
+        resetAndNavigate('BottomTab');
+      }
+      navigate('ReelScrollScreen', {
+        data: [res.data],
+        index: 0,
+      });
     } catch (error) {
       console.log('FETCH REEL ERROR', error);
       return [];

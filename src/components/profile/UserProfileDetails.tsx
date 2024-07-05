@@ -1,5 +1,12 @@
 import React, {useMemo} from 'react';
-import {View, StyleSheet, Image, TouchableOpacity} from 'react-native';
+import {
+  View,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  Share,
+  Platform,
+} from 'react-native';
 import {RFValue} from 'react-native-responsive-fontsize';
 import CustomText from '../global/CustomText';
 import {FONTS} from '../../constants/Fonts';
@@ -48,7 +55,19 @@ const UserProfileDetails: React.FC<{
   }, [followingUsers, user.id, user.isFollowing]);
 
   const handleShareProfile = () => {
-    // Handle share profile action
+    const profileUrl = `${
+      Platform.OS == 'android' ? 'http://localhost:3000' : 'reelzzz:/'
+    }/share/user/${user.username}`;
+    const message = `Hey, Checkout this profile: ${profileUrl}`;
+    Share.share({
+      message: message,
+    })
+      .then(res => {
+        console.log('Share Result', res);
+      })
+      .catch(error => {
+        console.log('Share Error', error);
+      });
   };
 
   return (
@@ -105,9 +124,11 @@ const UserProfileDetails: React.FC<{
             },
           ]}
           onPress={
-            loggedInUser?.id == user?.id ? () => {
-                //go to edit profile screen
-            } : () => handleFollow()
+            loggedInUser?.id == user?.id
+              ? () => {
+                  //go to edit profile screen
+                }
+              : () => handleFollow()
           }>
           <CustomText variant="h9" fontFamily={FONTS.Medium}>
             {loggedInUser?.id == user?.id
@@ -117,7 +138,7 @@ const UserProfileDetails: React.FC<{
               : 'Follow'}
           </CustomText>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.btn]} onPress={() => {}}>
+        <TouchableOpacity style={[styles.btn]} onPress={handleShareProfile}>
           <CustomText variant="h9" fontFamily={FONTS.Medium}>
             Share Profile
           </CustomText>
